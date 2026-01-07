@@ -18,35 +18,30 @@ const DashboardPage = () => {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  // Valid file types
   const validVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime']
   const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png']
 
-  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       processFiles(Array.from(e.target.files))
     }
   }
 
-  // Process and validate files
   const processFiles = (newFiles: File[]) => {
     const processedFiles: FileWithPreview[] = []
 
     for (const file of newFiles) {
-      // Validate file type
+      // Safety check: ensure file.type exists before calling .includes()
       const isValid = uploadType === 'video'
-        ? validVideoTypes.includes(file.type)
-        : validImageTypes.includes(file.type)
+        ? (file.type && validVideoTypes.includes(file.type))
+        : (file.type && validImageTypes.includes(file.type))
 
       if (!isValid) {
         alert(`Unsupported file type: ${file.name}. Please upload ${uploadType === 'video' ? 'MP4, WEBM, or MOV videos' : 'JPG, JPEG, or PNG images'}`)
         continue
       }
 
-      // Create preview URL
       const previewUrl = URL.createObjectURL(file)
-
       processedFiles.push({
         ...file,
         preview: previewUrl,
@@ -60,7 +55,6 @@ const DashboardPage = () => {
     }
   }
 
-  // Drag and drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -79,17 +73,13 @@ const DashboardPage = () => {
     }
   }
 
-  // Simulate file upload
   const handleUpload = async () => {
     if (files.length === 0) return
 
     setIsUploading(true)
     setUploadProgress(0)
-
-    // Update all files to uploading status
     setFiles(files.map(file => ({ ...file, uploadStatus: 'uploading', progress: 0 })))
 
-    // Simulate upload progress
     const totalFiles = files.length
     let completedFiles = 0
     let isMounted = true
@@ -109,13 +99,11 @@ const DashboardPage = () => {
         )
       }, 200)
 
-      // Wait for progress to reach 90%
       await new Promise(resolve => setTimeout(resolve, 1800))
       clearInterval(fileProgressInterval)
 
       if (!isMounted) break
 
-      // Complete this file
       setFiles(prevFiles =>
         prevFiles.map((file, index) =>
           index === i
@@ -126,8 +114,6 @@ const DashboardPage = () => {
 
       completedFiles++
       setUploadProgress((completedFiles / totalFiles) * 100)
-
-      // Wait a bit before next file
       await new Promise(resolve => setTimeout(resolve, 500))
     }
 
@@ -137,17 +123,14 @@ const DashboardPage = () => {
     }
   }
 
-  // Remove file
   const removeFile = (index: number) => {
     const fileToRemove = files[index]
     if (fileToRemove.preview) {
       URL.revokeObjectURL(fileToRemove.preview)
     }
-
     setFiles(files.filter((_, i) => i !== index))
   }
 
-  // Clean up preview URLs on unmount
   useEffect(() => {
     return () => {
       files.forEach(file => {
@@ -163,7 +146,6 @@ const DashboardPage = () => {
     navigate('/login')
   }
 
-  // Format file size
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' bytes'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
@@ -172,7 +154,6 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
       <header className="bg-black/20 backdrop-blur-sm p-4 flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-white">
@@ -190,21 +171,17 @@ const DashboardPage = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="bg-secondary rounded-2xl p-8 shadow-xl">
             <h2 className="text-3xl font-bold text-white mb-2">Welcome to CorruptX</h2>
             <p className="text-gray-300 mb-8">Upload evidence of corruption to help expose the truth</p>
 
-            {/* Upload Type Selection */}
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setUploadType('video')}
                 className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                  uploadType === 'video'
-                    ? 'bg-accent text-white'
-                    : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  uploadType === 'video' ? 'bg-accent text-white' : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                 }`}
               >
                 <Video className="w-4 h-4" />
@@ -213,9 +190,7 @@ const DashboardPage = () => {
               <button
                 onClick={() => setUploadType('photo')}
                 className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                  uploadType === 'photo'
-                    ? 'bg-accent text-white'
-                    : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  uploadType === 'photo' ? 'bg-accent text-white' : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                 }`}
               >
                 <Image className="w-4 h-4" />
@@ -223,7 +198,6 @@ const DashboardPage = () => {
               </button>
             </div>
 
-            {/* Upload Area */}
             <div
               className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
                 isDragging ? 'border-accent bg-gray-800' : 'border-gray-600 bg-gray-900'
@@ -244,18 +218,12 @@ const DashboardPage = () => {
               <label htmlFor="file-upload" className="cursor-pointer">
                 <div className="flex flex-col items-center justify-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center">
-                    {uploadType === 'video' ? (
-                      <Video className="w-8 h-8 text-white" />
-                    ) : (
-                      <Image className="w-8 h-8 text-white" />
-                    )}
+                    {uploadType === 'video' ? <Video className="w-8 h-8 text-white" /> : <Image className="w-8 h-8 text-white" />}
                   </div>
                   <h3 className="text-xl font-semibold text-white mb-2">
                     Drag & Drop {uploadType === 'video' ? 'Videos' : 'Photos'} Here
                   </h3>
-                  <p className="text-gray-400 mb-4">
-                    or click to browse files
-                  </p>
+                  <p className="text-gray-400 mb-4">or click to browse files</p>
                   <button className="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg text-white font-medium transition-colors flex items-center gap-2">
                     <UploadCloud className="w-4 h-4" />
                     Select Files
@@ -264,7 +232,6 @@ const DashboardPage = () => {
               </label>
             </div>
 
-            {/* File Preview Section */}
             {files.length > 0 && (
               <div className="mt-8">
                 <div className="flex justify-between items-center mb-4">
@@ -273,9 +240,7 @@ const DashboardPage = () => {
                     onClick={handleUpload}
                     disabled={isUploading}
                     className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                      isUploading
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        : 'bg-accent hover:bg-accent/90 text-white'
+                      isUploading ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-accent hover:bg-accent/90 text-white'
                     }`}
                   >
                     {isUploading ? (
@@ -292,14 +257,10 @@ const DashboardPage = () => {
                   </button>
                 </div>
 
-                {/* Upload Progress Bar */}
                 {isUploading && (
                   <div className="mb-6">
                     <div className="w-full bg-gray-700 rounded-full h-2.5">
-                      <div
-                        className="bg-accent h-2.5 rounded-full transition-all"
-                        style={{ width: `${uploadProgress}%` }}
-                      ></div>
+                      <div className="bg-accent h-2.5 rounded-full transition-all" style={{ width: `${uploadProgress}%` }}></div>
                     </div>
                     <p className="text-gray-400 text-sm mt-1">
                       Uploading {files.filter(f => f.uploadStatus === 'uploading').length} of {files.length} files...
@@ -307,31 +268,21 @@ const DashboardPage = () => {
                   </div>
                 )}
 
-                {/* Files Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {files.map((file, index) => (
                     <div key={index} className="bg-gray-800 rounded-lg p-4 relative">
-                      {/* File Preview */}
                       <div className="relative aspect-video mb-3 rounded-lg overflow-hidden bg-gray-700">
+                        {/* Safety check: ensure file.type exists before calling .startsWith() */}
                         {file.type && file.type.startsWith('image') ? (
-                          <img
-                            src={file.preview}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={file.preview} alt={file.name} className="w-full h-full object-cover" />
                         ) : file.type && file.type.startsWith('video') ? (
-                          <video
-                            src={file.preview}
-                            controls
-                            className="w-full h-full"
-                          />
+                          <video src={file.preview} controls className="w-full h-full" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-600 text-white">
                             <span>File preview not available</span>
                           </div>
                         )}
 
-                        {/* Upload Status Overlay */}
                         <div className="absolute top-2 right-2">
                           {file.uploadStatus === 'uploading' && (
                             <div className="w-6 h-6 rounded-full bg-gray-900/80 flex items-center justify-center">
@@ -343,35 +294,20 @@ const DashboardPage = () => {
                               <CheckCircle className="w-4 h-4 text-white" />
                             </div>
                           )}
-                          {file.uploadStatus === 'error' && (
-                            <div className="w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center">
-                              <AlertCircle className="w-4 h-4 text-white" />
-                            </div>
-                          )}
                         </div>
                       </div>
 
-                      {/* File Info */}
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-medium truncate">{file.name}</p>
                           <p className="text-gray-400 text-sm">
-                            {formatFileSize(file.size)} • {file.type.split('/')[1].toUpperCase()}
+                            {/* FIX: Check if file.type exists before splitting to prevent the crash */}
+                            {formatFileSize(file.size)} • {file.type ? file.type.split('/')[1].toUpperCase() : 'UNKNOWN'}
                           </p>
-                          {file.uploadStatus === 'uploading' && (
-                            <div className="w-full bg-gray-700 rounded-full h-1.5 mt-1">
-                              <div
-                                className="bg-accent h-1.5 rounded-full"
-                                style={{ width: `${file.progress}%` }}
-                              ></div>
-                            </div>
-                          )}
                         </div>
-
                         <button
                           onClick={() => removeFile(index)}
                           className="text-red-400 hover:text-red-300 transition-colors ml-2"
-                          title="Remove file"
                         >
                           <X className="w-4 h-4" />
                         </button>
