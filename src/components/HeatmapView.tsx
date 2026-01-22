@@ -63,14 +63,11 @@ const HeatmapView = ({
       zoomToBoundsOnClick: true,
       iconCreateFunction: function(cluster) {
         const count = cluster.getChildCount()
-        let size = 'small'
         let className = 'marker-cluster-small'
         
         if (count >= 10) {
-          size = 'large'
           className = 'marker-cluster-large'
         } else if (count >= 5) {
-          size = 'medium'
           className = 'marker-cluster-medium'
         }
         

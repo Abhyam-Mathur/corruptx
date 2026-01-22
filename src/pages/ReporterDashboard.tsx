@@ -4,19 +4,21 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../App";
 import HeatmapView from "../components/HeatmapView";
 
+interface Upload {
+  latitude: number | null;
+  longitude: number | null;
+  description?: string | null;
+  location?: string | null;
+  corruption_type?: string | null;
+  created_at?: string | null;
+}
+
 interface Assignment {
   id: string;
   status: string;
   created_at: string;
   report_id: string;
-  uploads?: {
-    latitude: number | null;
-    longitude: number | null;
-    description?: string | null;
-    location?: string | null;
-    corruption_type?: string | null;
-    created_at?: string | null;
-  } | null;
+  uploads: Upload[];
 }
 
 const ReporterDashboardPage = () => {
@@ -93,21 +95,22 @@ const ReporterDashboardPage = () => {
   };
 
   const mapPoints = assignments
-    .filter((a) => a.uploads?.latitude && a.uploads?.longitude)
+    .filter((a) => a.uploads.length > 0 && a.uploads[0]?.latitude && a.uploads[0]?.longitude)
     .map((a) => ({
-      lat: a.uploads!.latitude as number,
-      lng: a.uploads!.longitude as number,
+      lat: a.uploads[0]!.latitude as number,
+      lng: a.uploads[0]!.longitude as number,
       intensity: 1,
-      campaign: a.uploads?.location || "",
-      corruptionType: a.uploads?.corruption_type || "",
+      campaign: a.uploads[0]?.location || "",
+      corruptionType: a.uploads[0]?.corruption_type || "",
     }));
 
   const filteredAssignments = assignments.filter((a) => {
     const searchLower = searchTerm.toLowerCase();
+    const upload = a.uploads[0];
     return (
-      a.uploads?.location?.toLowerCase().includes(searchLower) ||
-      a.uploads?.description?.toLowerCase().includes(searchLower) ||
-      a.uploads?.corruption_type?.toLowerCase().includes(searchLower) ||
+      upload?.location?.toLowerCase().includes(searchLower) ||
+      upload?.description?.toLowerCase().includes(searchLower) ||
+      upload?.corruption_type?.toLowerCase().includes(searchLower) ||
       a.status.toLowerCase().includes(searchLower)
     );
   });
@@ -167,38 +170,41 @@ const ReporterDashboardPage = () => {
                 {filteredAssignments.length === 0 ? (
                   <p className="text-gray-400 text-sm">No assignments match your search.</p>
                 ) : (
-                  filteredAssignments.map((a) => (
-                  <div key={a.id} className="p-3 rounded-xl bg-black/30 border border-white/5">
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm text-gray-300">Status</p>
-                      <span className="text-xs px-2 py-1 rounded-full bg-white/10 border border-white/10">
-                        {a.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-white font-semibold">{a.uploads?.location || "Unknown location"}</p>
-                    <p className="text-xs text-gray-400 truncate">{a.uploads?.description || "No description"}</p>
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                      <span>{a.uploads?.corruption_type || "Unspecified"}</span>
-                      <span>{new Date(a.created_at).toLocaleString()}</span>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => handleStatusChange(a.id, "accepted")}
-                        disabled={actionLoading === a.id + "accepted"}
-                        className="flex-1 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm disabled:opacity-60"
-                      >
-                        {actionLoading === a.id + "accepted" ? "Saving..." : "Accept"}
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(a.id, "ignored")}
-                        disabled={actionLoading === a.id + "ignored"}
-                        className="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm disabled:opacity-60"
-                      >
-                        {actionLoading === a.id + "ignored" ? "Saving..." : "Ignore"}
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  filteredAssignments.map((a) => {
+                    const upload = a.uploads[0];
+                    return (
+                      <div key={a.id} className="p-3 rounded-xl bg-black/30 border border-white/5">
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="text-sm text-gray-300">Status</p>
+                          <span className="text-xs px-2 py-1 rounded-full bg-white/10 border border-white/10">
+                            {a.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-white font-semibold">{upload?.location || "Unknown location"}</p>
+                        <p className="text-xs text-gray-400 truncate">{upload?.description || "No description"}</p>
+                        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                          <span>{upload?.corruption_type || "Unspecified"}</span>
+                          <span>{new Date(a.created_at).toLocaleString()}</span>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleStatusChange(a.id, "accepted")}
+                            disabled={actionLoading === a.id + "accepted"}
+                            className="flex-1 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm disabled:opacity-60"
+                          >
+                            {actionLoading === a.id + "accepted" ? "Saving..." : "Accept"}
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(a.id, "ignored")}
+                            disabled={actionLoading === a.id + "ignored"}
+                            className="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm disabled:opacity-60"
+                          >
+                            {actionLoading === a.id + "ignored" ? "Saving..." : "Ignore"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}

@@ -23,7 +23,7 @@ const CorruptionTypes = [
 ]
 
 const DashboardPage = () => {
-  const { user, logout, role } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   // Flow state
