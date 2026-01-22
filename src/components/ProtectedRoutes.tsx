@@ -26,4 +26,16 @@ export const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => 
   return children
 }
 
+export const ReporterProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { user, loading, role, roleLoading } = useAuth()
+
+  if (loading || roleLoading) return <Loader />
+
+  if (!user) return <Navigate to="/login" replace />
+
+  if (role !== 'reporter') return <Navigate to="/dashboard" replace />
+
+  return children
+}
+
 export default AdminProtectedRoute

@@ -23,7 +23,7 @@ const CorruptionTypes = [
 ]
 
 const DashboardPage = () => {
-  const { user, logout } = useAuth()
+  const { user, logout, role } = useAuth()
   const navigate = useNavigate()
 
   // Flow state
@@ -47,6 +47,8 @@ const DashboardPage = () => {
   const [isAnonymous, setIsAnonymous] = useState(true)
   const [reporterName, setReporterName] = useState('')
   const [reporterContact, setReporterContact] = useState('')
+  const [isCheckingReporter, setIsCheckingReporter] = useState(false)
+  const [campaignSearchTerm, setCampaignSearchTerm] = useState('')
 
   // Heatmap data
   const [heatmapPoints, setHeatmapPoints] = useState<any[]>([])
@@ -439,6 +441,38 @@ const DashboardPage = () => {
     setShareFacebook(false)
   }
 
+  const handleJoinReporterClick = async () => {
+    if (!user) return;
+    
+    setIsCheckingReporter(true);
+    
+    try {
+      const { data: reporter, error } = await supabase
+        .from('reporters')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking reporter status:', error);
+        setIsCheckingReporter(false);
+        return;
+      }
+
+      if (reporter) {
+        // User already a reporter → redirect to dashboard
+        navigate('/reporter');
+      } else {
+        // Not a reporter → navigate to join form
+        navigate('/join-reporter');
+      }
+    } catch (err) {
+      console.error('Failed to check reporter status:', err);
+    } finally {
+      setIsCheckingReporter(false);
+    }
+  }
+
   /* ================= UI ================= */
 
   return (
@@ -448,6 +482,13 @@ const DashboardPage = () => {
           <span className="text-accent">CORRUPT</span>X
         </h1>
         <div className="flex items-center gap-4">
+          <button
+            onClick={handleJoinReporterClick}
+            disabled={isCheckingReporter}
+            className="px-4 py-2 rounded-lg bg-accent text-white font-semibold hover:bg-accent/80 transition-colors shadow-lg shadow-accent/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCheckingReporter ? 'Checking...' : 'Join as Reporter'}
+          </button>
           <span className="text-white">Welcome</span>
           <button
             onClick={handleLogout}
@@ -488,9 +529,29 @@ const DashboardPage = () => {
               </div>
             </div>
 
+            {/* Search Bar for Campaigns */}
+            <div className="mb-6">
+              <input
+                type="text"
+                placeholder="Search campaigns by title or location..."
+                value={campaignSearchTerm}
+                onChange={(e) => setCampaignSearchTerm(e.target.value)}
+                className="w-full px-4 py-3 bg-secondary border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-accent focus:outline-none transition-colors"
+              />
+            </div>
+
             {/* Campaign Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {campaigns.map((campaign) => (
+              {campaigns
+                .filter((campaign) => {
+                  const searchLower = campaignSearchTerm.toLowerCase();
+                  return (
+                    campaign.title?.toLowerCase().includes(searchLower) ||
+                    campaign.location?.toLowerCase().includes(searchLower) ||
+                    campaign.description?.toLowerCase().includes(searchLower)
+                  );
+                })
+                .map((campaign) => (
                 <CampaignCard
                   key={campaign.id}
                   campaign={campaign}

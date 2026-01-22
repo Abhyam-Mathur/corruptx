@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -37,7 +40,7 @@ const HeatmapView = ({
 }: HeatmapViewProps) => {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<L.Map | null>(null)
-  const heatmapLayerRef = useRef<any>(null)
+  const markerClusterGroupRef = useRef<L.MarkerClusterGroup | null>(null)
 
   useEffect(() => {
     if (!mapRef.current || leafletMapRef.current) return
@@ -52,39 +55,39 @@ const HeatmapView = ({
       maxZoom: 19,
     }).addTo(map)
 
-    // Create heatmap layer using simple circles for now
-    // In a production app, you'd use a proper heatmap library like leaflet.heat
-    const createHeatmapLayer = () => {
-      const layerGroup = L.layerGroup()
-
-      points.forEach((point) => {
-        const color = getColorForIntensity(point.intensity)
-        const circle = L.circle([point.lat, point.lng], {
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.6,
-          radius: Math.max(5000, point.intensity * 1000), // Minimum radius, scale with intensity
-          weight: 2,
-        })
-
-        if (onPointClick) {
-          circle.on('click', () => onPointClick(point))
+    // Initialize marker cluster group with custom styling
+    const markerClusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 80,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: function(cluster) {
+        const count = cluster.getChildCount()
+        let size = 'small'
+        let className = 'marker-cluster-small'
+        
+        if (count >= 10) {
+          size = 'large'
+          className = 'marker-cluster-large'
+        } else if (count >= 5) {
+          size = 'medium'
+          className = 'marker-cluster-medium'
         }
-
-        circle.bindTooltip(`Reports: ${point.intensity}`)
-        layerGroup.addLayer(circle)
-      })
-
-      return layerGroup
-    }
-
-    const heatmapLayer = createHeatmapLayer()
-    heatmapLayer.addTo(map)
-    heatmapLayerRef.current = heatmapLayer
+        
+        return L.divIcon({
+          html: `<div><span>${count}</span></div>`,
+          className: `marker-cluster ${className}`,
+          iconSize: L.point(40, 40)
+        })
+      }
+    })
+    
+    markerClusterGroup.addTo(map)
+    markerClusterGroupRef.current = markerClusterGroup
 
     // Add controls if requested
     if (showControls) {
-      L.control.layers({}, { 'Corruption Heatmap': heatmapLayer }).addTo(map)
+      L.control.layers({}, { 'Corruption Reports': markerClusterGroup }).addTo(map)
     }
 
     return () => {
@@ -95,35 +98,70 @@ const HeatmapView = ({
     }
   }, [center, zoom, showControls])
 
-  // Update heatmap when points change
+  // Update markers when points change
   useEffect(() => {
-    if (!leafletMapRef.current || !heatmapLayerRef.current) return
+    if (!leafletMapRef.current || !markerClusterGroupRef.current) return
 
-    // Remove old layer
-    leafletMapRef.current.removeLayer(heatmapLayerRef.current)
+    // Clear existing markers
+    markerClusterGroupRef.current.clearLayers()
 
-    // Create new layer
-    const layerGroup = L.layerGroup()
+    // Add markers for each point
     points.forEach((point) => {
       const color = getColorForIntensity(point.intensity)
-      const circle = L.circle([point.lat, point.lng], {
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.6,
-        radius: Math.max(5000, point.intensity * 1000),
-        weight: 2,
+      
+      // Create custom icon based on intensity
+      const icon = L.divIcon({
+        className: 'custom-marker-icon',
+        html: `
+          <div style="
+            background-color: ${color};
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+          ">
+            ${point.intensity}
+          </div>
+        `,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
       })
 
+      const marker = L.marker([point.lat, point.lng], { icon })
+
+      // Add popup with details
+      const popupContent = `
+        <div style="min-width: 150px;">
+          <strong>Reports: ${point.intensity}</strong><br/>
+          ${point.campaign ? `Campaign: ${point.campaign}<br/>` : ''}
+          ${point.corruptionType ? `Type: ${point.corruptionType}` : ''}
+        </div>
+      `
+      marker.bindPopup(popupContent)
+
+      // Add click handler if provided
       if (onPointClick) {
-        circle.on('click', () => onPointClick(point))
+        marker.on('click', () => onPointClick(point))
       }
 
-      circle.bindTooltip(`Reports: ${point.intensity}`)
-      layerGroup.addLayer(circle)
+      // Add marker to cluster group
+      markerClusterGroupRef.current!.addLayer(marker)
     })
 
-    layerGroup.addTo(leafletMapRef.current)
-    heatmapLayerRef.current = layerGroup
+    // Fit bounds to show all markers if there are any
+    if (points.length > 0 && leafletMapRef.current) {
+      const bounds = markerClusterGroupRef.current.getBounds()
+      if (bounds.isValid()) {
+        leafletMapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 })
+      }
+    }
   }, [points, onPointClick])
 
   const getColorForIntensity = (intensity: number): string => {

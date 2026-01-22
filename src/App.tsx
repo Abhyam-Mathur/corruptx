@@ -15,8 +15,11 @@ import AdminCampaigns from "./pages/AdminCampaigns";
 import AdminCampaignRequests from "./pages/AdminCampaignRequests";
 import AdminUsers from "./pages/AdminUsers";
 import AdminHeatmapPage from "./pages/AdminHeatmap";
+import AdminReportersPage from "./pages/AdminReporters";
 import EmailVerificationNotice from "./pages/EmailVerificationNotice";
-import { AdminProtectedRoute, UserProtectedRoute } from "./components/ProtectedRoutes";
+import { AdminProtectedRoute, UserProtectedRoute, ReporterProtectedRoute } from "./components/ProtectedRoutes";
+import JoinReporterPage from "./pages/JoinReporter";
+import ReporterDashboardPage from "./pages/ReporterDashboard";
 
 /* =========================
    AUTH CONTEXT
@@ -174,6 +177,22 @@ const App = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route
+              path="/join-reporter"
+              element={
+                <UserProtectedRoute>
+                  <JoinReporterPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/reporter"
+              element={
+                <ReporterProtectedRoute>
+                  <ReporterDashboardPage />
+                </ReporterProtectedRoute>
+              }
+            />
             <Route path="/verify-email" element={<EmailVerificationNotice />} />
             <Route
               path="/dashboard"
@@ -220,6 +239,14 @@ const App = () => {
               element={
                 <AdminProtectedRoute>
                   <AdminUsers />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/reporters"
+              element={
+                <AdminProtectedRoute>
+                  <AdminReportersPage />
                 </AdminProtectedRoute>
               }
             />

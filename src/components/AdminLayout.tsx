@@ -11,6 +11,7 @@ const Sidebar = () => {
     { path: '/admin/campaigns', label: 'Campaigns', icon: '🎯' },
     { path: '/admin/campaign-requests', label: 'Requests', icon: '📝' },
     { path: '/admin/users', label: 'Users', icon: '👥' },
+    { path: '/admin/reporters', label: 'Reporters', icon: '🔍' },
   ]
 
   return (
