@@ -20,6 +20,7 @@ import EmailVerificationNotice from "./pages/EmailVerificationNotice";
 import { AdminProtectedRoute, UserProtectedRoute, ReporterProtectedRoute } from "./components/ProtectedRoutes";
 import JoinReporterPage from "./pages/JoinReporter";
 import ReporterDashboardPage from "./pages/ReporterDashboard";
+import ReporterSubmitPage from "./pages/ReporterSubmit";
 
 /* =========================
    AUTH CONTEXT
@@ -190,6 +191,14 @@ const App = () => {
               element={
                 <ReporterProtectedRoute>
                   <ReporterDashboardPage />
+                </ReporterProtectedRoute>
+              }
+            />
+            <Route
+              path="/reporter/submit/:reportId"
+              element={
+                <ReporterProtectedRoute>
+                  <ReporterSubmitPage />
                 </ReporterProtectedRoute>
               }
             />
